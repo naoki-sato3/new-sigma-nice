@@ -1,4 +1,4 @@
-'''Wide-ResNet in Pytorch
+'''Wide-ResNet in Pytorch 
 
 Reference:
 [1] Sergey Zagoruyko, Nikos Komodakis

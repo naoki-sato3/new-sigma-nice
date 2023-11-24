@@ -80,7 +80,7 @@ if __name__ == '__main__':
     wandb.init(config = args,
                project = wandb_project_name,
                name = wandb_exp_name,
-               entity = "naoki-sato")
+               entity = "XXXXXX")
     wandb.init(settings=wandb.Settings(start_method='fork'))
 
     print('==> Preparing data..')

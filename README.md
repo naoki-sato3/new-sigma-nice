@@ -21,7 +21,7 @@ parser.add_argument("--wandb_entity", type=str, default='XXXXXX', help='entity o
 # Usage
 Please select method.
 ```
-parser.add_argument('--method', default="batch", type=str, help="constant, lr, batch, hybrid, poly, cosine, exp")
+parser.add_argument('--method', default="batch", type=str, help="constant, lr, batch, hybrid, poly, cosine, exp, sampling")
 ```
 Training on CIFAR100 dataset.
 ```

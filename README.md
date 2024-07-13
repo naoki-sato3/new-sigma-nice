@@ -23,6 +23,15 @@ Please select method.
 ```
 parser.add_argument('--method', default="batch", type=str, help="constant, lr, batch, hybrid, poly, cosine, exp, sampling")
 ```
+ - "constant" means constant learning rate and constant batch size used in training.
+ - "lr" means decaying leraning rate and constant batch size used in training.
+ - "batch" means constant learning rate and increasing batch size used in training.
+ - "hybrid" means decaying learning rate and increasing batch size used in training.
+ - "poly" means polynomial decay learning rate used in training.
+ - "cosine" means cosine annealing used in training.
+ - "exp" means exponential decay learning rate used in training.
+ - "sampling" measure a stochastic noise norm (see Figure 8).
+
 Training on CIFAR100 dataset.
 ```
 python3 cifar.py

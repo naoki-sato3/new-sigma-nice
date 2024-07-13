@@ -5,10 +5,6 @@ Our experiments were based on the basic code for image classification.
 # Abstract
 The graduated optimization approach is a heuristic method for finding globally optimal solutions for nonconvex functions and has been theoretically analyzed in several studies. This paper defines a new family of nonconvex functions for graduated optimization, discusses their sufficient conditions, and provides a convergence analysis of the graduated optimization algorithm for them. It shows that stochastic gradient descent (SGD) with mini-batch stochastic gradients has the effect of smoothing the function, the degree of which is determined by the learning rate and batch size. This finding provides theoretical insights on why large batch sizes fall into sharp local minima, why decaying learning rates and increasing batch sizes are superior to fixed learning rates and batch sizes, and what the optimal learning rate scheduling is. To the best of our knowledge, this is the first paper to provide a theoretical explanation for these aspects. Moreover, a new graduated optimization framework that uses a decaying learning rate and increasing batch size is analyzed and experimental results of image classification that support our theoretical findings are reported.
 
-# Additional Experiment Result for Reviewer 9LjZ
-Please check "additional_results_linear_decay.pdf".  
-Accuracy score for testing and loss function value for training versus epochs in training of ResNet18 on the CIFAR100 dataset.  
-
 # Downloads
 ・[ImageNet dataset](https://image-net.org/index.php)  
 

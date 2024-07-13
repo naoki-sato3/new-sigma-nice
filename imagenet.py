@@ -22,7 +22,17 @@ def train(epoch):
         loss = criterion(outputs, labels)
         loss.backward()
 
-        optimizer.step()
+        if args.method == "sampling" and steps == args.steps:
+            mt_list = optimizer.step(itr=steps)
+            full_list = get_full_grad_list(net,trainset,optimizer)
+            for m, g in zip(mt_list, full_list):
+                p_norm += torch.sum(torch.mul(m-g, m-g))
+            p_norm = torch.sqrt(p_norm)
+            wandb.log({'noise_norm': p_norm})
+            sys.exit()
+        else:
+            optimizer.step()
+            steps += 1
 
         train_loss += loss.item()
         _, predicted = outputs.max(1)
@@ -62,6 +72,31 @@ def test(epoch):
     acc = 100.*correct/total
     wandb.log({'accuracy': acc})
 
+def get_full_grad_list(net, train_set, optimizer):
+    parameters=[p for p in net.parameters()]
+    batch_size=1000
+    train_loader=torch.utils.data.DataLoader(train_set,batch_size=batch_size,shuffle=True,num_workers=2)
+    device='cuda:0'
+    init=True
+    full_grad_list=[]
+
+    for i, (xx,yy) in (enumerate(train_loader)):
+        xx = xx.to(device, non_blocking = True)
+        yy = yy.to(device, non_blocking = True)
+        optimizer.zero_grad()
+        loss = nn.CrossEntropyLoss(reduction='mean')(net(xx), yy)
+        loss.backward()
+        if init:
+            for params in parameters:
+                full_grad = torch.zeros_like(params.grad.detach().data)
+                full_grad_list.append(full_grad)
+            init=False
+
+        for i, params in enumerate(parameters):
+            g = params.grad.detach().data
+            full_grad_list[i] += (batch_size / len(train_set)) * g
+    return full_grad_list
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
     parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
@@ -69,7 +104,8 @@ if __name__ == '__main__':
     parser.add_argument('--epochs', default=200, type=int, help="the number of epochs")
     parser.add_argument('--decay_epoch', default=40, type=int, help="the number of epochs to decay leraning rate")
     parser.add_argument('--power', default=0.9, type=float, help="polinomial or exponential power")
-    parser.add_argument('--method', default="batch", type=str, help="constant, lr, batch, hybrid, poly, cosine, exp")
+    parser.add_argument('--method', default="batch", type=str, help="constant, lr, batch, hybrid, poly, cosine, exp, sampling")
+    parser.add_argument('--steps', default=1000, type=int, help='the number of steps for a method "sampling"')
     
     args = parser.parse_args()
     wandb_project_name = "new-sigma-nice"

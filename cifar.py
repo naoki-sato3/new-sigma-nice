@@ -36,8 +36,6 @@ def train(epoch):
             optimizer.step()
             steps += 1
 
-        optimizer.step()
-
         train_loss += loss.item()
         _, predicted = outputs.max(1)
         total += labels.size(0)

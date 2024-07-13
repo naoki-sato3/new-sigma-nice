@@ -16,8 +16,6 @@ import torchvision.transforms as transforms
 import wandb
 
 from sgd import SGD
-from shb import SHB
-from nshb import NSHB
 from my_models.resnet import resnet18
 from my_models.wideresnet import WideResNet28_10
 from my_utils import progress_bar
@@ -204,35 +202,34 @@ if __name__ == '__main__':
         train(epoch)
         test(epoch)
 
-    if args.method == "sharpness":
-        sharpness_split = 'test' if args.sharpness_on_test_set else 'train'
-        loss_f = lambda logits, y: F.cross_entropy(logits, y, reduction='mean')
-        net = LogitNormalizationWrapper(net, normalize_logits=args.normalize_logits)
-        batches_sharpness = data.get_loaders(args.dataset, args.n_eval_sharpness, args.bs_sharpness, split=sharpness_split, shuffle=False,
-                                             data_augm=args.data_augm_sharpness, drop_last=False, randaug=args.data_augm_sharpness)
+    sharpness_split = 'test' if args.sharpness_on_test_set else 'train'
+    loss_f = lambda logits, y: F.cross_entropy(logits, y, reduction='mean')
+    net = LogitNormalizationWrapper(net, normalize_logits=args.normalize_logits)
+    batches_sharpness = data.get_loaders(args.dataset, args.n_eval_sharpness, args.bs_sharpness, split=sharpness_split, shuffle=False,
+                                         data_augm=args.data_augm_sharpness, drop_last=False, randaug=args.data_augm_sharpness)
 
-        if args.algorithm == 'm_apgd_l2':
-            sharpness_obj, sharpness_err, _, output = sharpness.eval_APGD_sharpness(
-                net, batches_sharpness, loss_f, 
-                rho=args.rho, n_iters=args.n_iters, n_restarts=args.n_restarts, step_size_mult=args.step_size_mult,
-                rand_init=args.sharpness_rand_init, no_grad_norm=args.no_grad_norm,
-                verbose=True, return_output=True, adaptive=args.adaptive, version='default', norm='l2')
+    if args.algorithm == 'm_apgd_l2':
+        sharpness_obj, sharpness_err, _, output = sharpness.eval_APGD_sharpness(
+            net, batches_sharpness, loss_f, 
+            rho=args.rho, n_iters=args.n_iters, n_restarts=args.n_restarts, step_size_mult=args.step_size_mult,
+            rand_init=args.sharpness_rand_init, no_grad_norm=args.no_grad_norm,
+            verbose=True, return_output=True, adaptive=args.adaptive, version='default', norm='l2')
 
-        elif args.algorithm == 'm_apgd_linf':
-            sharpness_obj, sharpness_err, _, output = sharpness.eval_APGD_sharpness(
-                net, batches_sharpness, loss_f,
-                rho=args.rho, n_iters=args.n_iters, n_restarts=args.n_restarts, step_size_mult=args.step_size_mult,
-                rand_init=args.sharpness_rand_init, no_grad_norm=args.no_grad_norm,
-                verbose=True, return_output=True, adaptive=args.adaptive, version='default', norm='linf')
+    elif args.algorithm == 'm_apgd_linf':
+        sharpness_obj, sharpness_err, _, output = sharpness.eval_APGD_sharpness(
+            net, batches_sharpness, loss_f,
+            rho=args.rho, n_iters=args.n_iters, n_restarts=args.n_restarts, step_size_mult=args.step_size_mult,
+            rand_init=args.sharpness_rand_init, no_grad_norm=args.no_grad_norm,
+            verbose=True, return_output=True, adaptive=args.adaptive, version='default', norm='linf')
 
-        elif args.algorithm == 'avg_l2':
-            sharpness_obj, sharpness_err, _, output = sharpness.eval_average_sharpness(
-                net, batches_sharpness, loss_f, rho=args.rho, n_iters=args.n_iters, return_output=True, adaptive=args.adaptive, norm='l2')
+    elif args.algorithm == 'avg_l2':
+        sharpness_obj, sharpness_err, _, output = sharpness.eval_average_sharpness(
+            net, batches_sharpness, loss_f, rho=args.rho, n_iters=args.n_iters, return_output=True, adaptive=args.adaptive, norm='l2')
 
-        elif args.algorithm == 'avg_linf':
-            sharpness_obj, sharpness_err, _, output = sharpness.eval_average_sharpness(
-                net, batches_sharpness, loss_f, rho=args.rho, n_iters=args.n_iters, return_output=True, adaptive=args.adaptive, norm='linf')
+    elif args.algorithm == 'avg_linf':
+        sharpness_obj, sharpness_err, _, output = sharpness.eval_average_sharpness(
+            net, batches_sharpness, loss_f, rho=args.rho, n_iters=args.n_iters, return_output=True, adaptive=args.adaptive, norm='linf')
 
-        print('sharpness: obj={:.5f}, err={:.2%}'.format(sharpness_obj, sharpness_err))
-        wandb.log({'sharpness_obj': sharpness_obj,
-                   'sharpness_err': sharpness_err})
+    print('sharpness: obj={:.5f}, err={:.2%}'.format(sharpness_obj, sharpness_err))
+    wandb.log({'sharpness_obj': sharpness_obj,
+                'sharpness_err': sharpness_err})

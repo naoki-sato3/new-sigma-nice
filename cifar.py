@@ -24,17 +24,8 @@ def train(epoch):
         loss = criterion(outputs, labels)
         loss.backward()
 
-        if args.method == "sampling" and steps == args.steps:
-            mt_list = optimizer.step(itr=steps)
-            full_list = get_full_grad_list(net,trainset,optimizer)
-            for m, g in zip(mt_list, full_list):
-                p_norm += torch.sum(torch.mul(m-g, m-g))
-            p_norm = torch.sqrt(p_norm)
-            wandb.log({'noise_norm': p_norm})
-            sys.exit()
-        else:
-            optimizer.step()
-            steps += 1
+        optimizer.step()
+        steps += 1
 
         train_loss += loss.item()
         _, predicted = outputs.max(1)
@@ -44,7 +35,7 @@ def train(epoch):
         progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
                      % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
         
-        if args.method in ["lr", "hybrid", "cosine", "poly", "exp"]:
+        if args.method in ["lr", "hybrid"]:
             last_lr = scheduler.get_last_lr()[0]
             wandb.log({'last_lr': last_lr})
 
@@ -74,41 +65,14 @@ def test(epoch):
     acc = 100.*correct/total
     wandb.log({'accuracy': acc})
 
-def get_full_grad_list(net, train_set, optimizer):
-    parameters=[p for p in net.parameters()]
-    batch_size=1000
-    train_loader=torch.utils.data.DataLoader(train_set,batch_size=batch_size,shuffle=True,num_workers=2)
-    device='cuda:0'
-    init=True
-    full_grad_list=[]
-
-    for i, (xx,yy) in (enumerate(train_loader)):
-        xx = xx.to(device, non_blocking = True)
-        yy = yy.to(device, non_blocking = True)
-        optimizer.zero_grad()
-        loss = nn.CrossEntropyLoss(reduction='mean')(net(xx), yy)
-        loss.backward()
-        if init:
-            for params in parameters:
-                full_grad = torch.zeros_like(params.grad.detach().data)
-                full_grad_list.append(full_grad)
-            init=False
-
-        for i, params in enumerate(parameters):
-            g = params.grad.detach().data
-            full_grad_list[i] += (batch_size / len(train_set)) * g
-    return full_grad_list
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
     parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
     parser.add_argument('--batchsize', default=32, type=int, help='training batch size')
     parser.add_argument('--epochs', default=200, type=int, help="the number of epochs")
     parser.add_argument('--decay_epoch', default=40, type=int, help="the number of epochs to decay leraning rate")
-    parser.add_argument('--power', default=0.9, type=float, help="polinomial or exponential power")
-    parser.add_argument('--method', default="batch", type=str, help="constant, lr, batch, hybrid, poly, cosine, exp, sampling")
+    parser.add_argument('--method', default="batch", type=str, help="constant, lr, batch, hybrid")
     parser.add_argument('--model', default="ResNet18", type=str, help="ResNet18, WideResNet-28-10")
-    parser.add_argumetn('--steps', default=10000, type=int, help="the number of steps for a method 'sampling'")
     
     args = parser.parse_args()
     wandb_project_name = "new-sigma-nice"
@@ -152,12 +116,6 @@ if __name__ == '__main__':
     elif args.method == "hybrid":
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.decay_epoch, gamma=0.866025403784439)
         increase = 1.5
-    elif args.method == "cosine":
-        scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=200)
-    elif args.method == "poly":
-        scheduler = optim.lr_scheduler.PolynomialLR(optimizer, total_iters=200, power=args.power)
-    elif args.method == "exp":
-        scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=args.power)
     elif args.method == "batch":
         increase = 2
     print(optimizer)
@@ -166,7 +124,7 @@ if __name__ == '__main__':
     for epoch in range(args.epochs):
         train(epoch)
         test(epoch)
-        if args.method in ["lr", "hybrid", "cosine", "poly", "exp"]:
+        if args.method in ["lr", "hybrid"]:
             scheduler.step()
         if args.method in ["batch", "hybrid"]:
             wandb.log({'batch': next_batch})
